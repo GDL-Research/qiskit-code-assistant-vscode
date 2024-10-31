@@ -66,10 +66,24 @@
     }
   },
   "contributes": {
+    "menus": {
+      "editor/title": [
+        {
+          "when": "editorLangId == python",
+          "command": "qiskit-vscode.migrate-code",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "qiskit-vscode.api-token",
         "title": "Qiskit Code Assistant: Set IBM Quantum API token"
+      },
+      {
+        "command": "qiskit-vscode.migrate-code",
+        "title": "Qiskit Code Assistant: Migrate code",
+        "icon": "$(edit)"
       }
     ],
     "configuration": {
@@ -80,6 +94,12 @@
           "default": "https://qiskit-code-assistant.quantum.ibm.com",
           "format": "url",
           "description": "URL to the Qiskit Code Assistant Service API"
+        },
+        "qiskitCodeAssistant.migrationUrl": {
+          "type": "string",
+          "default": "hhttp://localhost:8000",
+          "format": "url",
+          "description": "URL to the Qiskit Code Assistant Migration Service"
         }
       }
     },

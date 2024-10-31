@@ -4,12 +4,14 @@ import selectModel from "./selectModel";
 import handleGetCompletion from "./handleGetCompletion";
 import handleStatusBar from "./handleStatusBar";
 import setApiToken from "./setApiToken";
+import migrateQiskitCode from "./migrateQiskitCode";
 
 const commands: CommandModule[] = [
   acceptDisclaimer,
   acceptSuggestion,
   handleGetCompletion,
   handleStatusBar,
+  migrateQiskitCode,
   selectModel,
   setApiToken,
 ];
