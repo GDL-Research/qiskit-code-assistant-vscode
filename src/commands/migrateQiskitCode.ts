@@ -1,14 +1,19 @@
 import vscode from "vscode";
 import { migrateCode } from "../services/qiskitMigration";
+import { setDefaultStatus, setLoadingStatus } from "../statusBar/statusBar";
 
+let isRunning = false;
 
 async function handler(): Promise<void> {
   console.log("qiskit-vscode.migrate-code::handler");
 
   const editor = vscode.window.activeTextEditor;
-  if (!editor) {
-    return; // No open text editor
+  if (!editor || isRunning) {
+    return; // No open text editor or already running
   }
+
+  isRunning = true;
+  setLoadingStatus();
 
   const selection = editor.selection;
   let firstLine: vscode.TextLine;
@@ -28,7 +33,32 @@ async function handler(): Promise<void> {
   const textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
   const text = editor.document.getText(textRange);
 
-  const migratedText = await migrateCode(text);
+  const message = selection.isEmpty ? "Do you want to migrate the entire document?" : "Do you want to migrate the selected lines of text?";
+  const runMigrate = await vscode.window.showInformationMessage(message, "Yes", "No");
+
+  if (runMigrate === "No") {
+    setDefaultStatus();
+    isRunning = false;
+    return;
+  }
+
+  const notificationTitle = `Reviewing and migrating the ${selection.isEmpty ? "document" : "selected"} code. Please wait...` 
+  const migratedText = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    cancellable: false,
+    title: notificationTitle
+  }, async (progress):Promise<string> => {
+    
+    progress.report({  increment: 0 });
+
+    const t = await migrateCode(text);
+
+    progress.report({ increment: 100 });
+    return t;
+  });
+
+  // const migratedText =  await migrateCode(text);
+
   editor.edit(editBuilder => {
     editBuilder.replace(textRange, migratedText);
   });
@@ -38,7 +68,10 @@ async function handler(): Promise<void> {
   const lastPosition = new vscode.Position(newLastLine, lastChar);
   
   editor.selection = new vscode.Selection(firstLine.range.start, lastPosition);
-  vscode.window.showInformationMessage(infoMsg)
+  vscode.window.showInformationMessage(infoMsg);
+
+  setDefaultStatus();
+  isRunning = false;
 }
 
 const command: CommandModule = {
