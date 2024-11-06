@@ -1,6 +1,5 @@
 import vscode from "vscode";
 
-import { getExtensionContext } from "../globals/extensionContext";
 import { normalizeURL } from "../utilities/utils";
 
 const config = vscode.workspace.getConfiguration("qiskitCodeAssistant")
