@@ -1,6 +1,8 @@
 import vscode from "vscode";
 
 import { normalizeURL } from "../utilities/utils";
+import { getExtensionContext } from "../globals/extensionContext";
+import { currentModel } from "../commands/selectModel";
 
 const config = vscode.workspace.getConfiguration("qiskitCodeAssistant")
 const MIGRATION_SERVICE_URL = config.get<string>("migrationUrl") as string;
@@ -27,11 +29,12 @@ function getServiceBaseUrl() {
   }
 }
 
-function getHeaders() {
+function getHeaders(apiToken: string) {
   return {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'X-Caller': 'qiskit-vscode'
+    'X-Caller': 'qiskit-vscode',
+    'Authorization': `Bearer ${apiToken}`
   }
 }
 
@@ -45,6 +48,17 @@ async function runFetch(endpoint: string | URL | Request, options: RequestInit) 
   }
 }
 
+async function getApiToken() {
+  const context = getExtensionContext();
+  const apiToken = await context?.secrets.get("apiToken");
+
+  if (!apiToken) {
+    throw Error("Missing API Token");
+  }
+
+  return apiToken;
+}
+
 export async function migrateCode(
   code: string,
   fromVersion?: string,
@@ -52,11 +66,14 @@ export async function migrateCode(
 ): Promise<string> {
   // POST /migrate
   const endpoint = `${getServiceBaseUrl()}/migrate`;
+  const apiToken = await getApiToken()
   const options = {
     'method': 'POST',
-    'headers': getHeaders(),
+    'headers': getHeaders(apiToken),
+    
     'body': JSON.stringify({
       code,
+      model_id: currentModel?._id,
       version_from: fromVersion,
       version_to: toVersion
     })
