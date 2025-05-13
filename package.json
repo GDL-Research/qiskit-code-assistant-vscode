@@ -110,13 +110,6 @@
           "default": false,
           "markdownDescription": "Enable streaming of completions data",
           "tags": ["streaming"]
-        },
-        "qiskitCodeAssistant.migrationUrl": {
-          "type": "string",
-          "default": "hhttp://localhost:8000",
-          "format": "url",
-          "description": "URL to the Qiskit Code Assistant Migration Service",
-          "tags": ["usesOnlineServices"]
         }
       }
     },
