@@ -4,6 +4,14 @@ import { setDefaultStatus, setLoadingStatus } from "../statusBar/statusBar";
 
 let isRunning = false;
 
+function migrationCompletionMsg(outputText: string, isFullDoc: boolean) {
+  if (!outputText) {
+    return isFullDoc ? "No code was found in the document that needed to be migrated" : "No code was found in the selected lines that needed to be migrataed"
+  } else {
+    return isFullDoc ? "Document successfully migrated" : "Selected code successfully migrated";
+  }
+}
+
 async function handler(): Promise<void> {
   console.log("qiskit-vscode.migrate-code::handler");
 
@@ -18,16 +26,16 @@ async function handler(): Promise<void> {
   const selection = editor.selection;
   let firstLine: vscode.TextLine;
   let lastLine: vscode.TextLine;
-  let infoMsg: string;
+  let fullDocMigration: boolean;
 
   if (selection.isEmpty) {
     firstLine = editor.document.lineAt(0);
     lastLine = editor.document.lineAt(editor.document.lineCount - 1);
-    infoMsg = "Document successfully migrated";
+    fullDocMigration = true;
   } else {
     firstLine = editor.document.lineAt(selection.start.line);
     lastLine = editor.document.lineAt(selection.end.line);
-    infoMsg = "Selected code successfully migrated";
+    fullDocMigration = false;
   }
 
   const textRange = new vscode.Range(firstLine.range.start, lastLine.range.end);
@@ -51,13 +59,24 @@ async function handler(): Promise<void> {
     
     progress.report({  increment: 0 });
 
-    const t = await migrateCode(text);
+    let t = await migrateCode(text);
+
+    if (text.trim() == t.trim()) {
+      t = ""
+    }
 
     progress.report({ increment: 100 });
     return t;
   });
 
-  // const migratedText =  await migrateCode(text);
+  const infoMsg = migrationCompletionMsg(migratedText, fullDocMigration)
+  if (!migratedText) {
+    vscode.window.showInformationMessage(infoMsg);
+    setDefaultStatus();
+    isRunning = false;
+    return;
+  }
+
 
   editor.edit(editBuilder => {
     editBuilder.replace(textRange, migratedText);
