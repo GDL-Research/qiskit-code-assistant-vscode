@@ -50,47 +50,49 @@ async function handler(): Promise<void> {
     return;
   }
 
-  const notificationTitle = `Reviewing and migrating the ${selection.isEmpty ? "document" : "selected"} code. Please wait...` 
-  const migratedText = await vscode.window.withProgress({
-    location: vscode.ProgressLocation.Notification,
-    cancellable: false,
-    title: notificationTitle
-  }, async (progress):Promise<string> => {
-    
-    progress.report({  increment: 0 });
+  try {
+    const notificationTitle = `Reviewing and migrating the ${selection.isEmpty ? "document" : "selected"} code. Please wait...` 
+    const migratedText = await vscode.window.withProgress({
+      location: vscode.ProgressLocation.Notification,
+      cancellable: false,
+      title: notificationTitle
+    }, async (progress):Promise<string> => {
+      
+      progress.report({  increment: 25 });
 
-    let t = await migrateCode(text);
+      let t = await migrateCode(text);
 
-    if (text.trim() == t.trim()) {
-      t = ""
+      if (text.trim() == t.trim()) {
+        t = ""
+      }
+
+      progress.report({ increment: 100 });
+      return t;
+    });
+
+    const infoMsg = migrationCompletionMsg(migratedText, fullDocMigration)
+    if (!migratedText) {
+      vscode.window.showInformationMessage(infoMsg);
+      return;
     }
 
-    progress.report({ increment: 100 });
-    return t;
-  });
 
-  const infoMsg = migrationCompletionMsg(migratedText, fullDocMigration)
-  if (!migratedText) {
+    editor.edit(editBuilder => {
+      editBuilder.replace(textRange, migratedText);
+    });
+    const migratedLines = migratedText.split("\n");
+    const newLastLine = firstLine.lineNumber + migratedLines.length - 1;
+    const lastChar = migratedLines[migratedLines.length - 1].length + 1;
+    const lastPosition = new vscode.Position(newLastLine, lastChar);
+    
+    editor.selection = new vscode.Selection(firstLine.range.start, lastPosition);
     vscode.window.showInformationMessage(infoMsg);
+  } catch(error) {
+    throw error;
+  } finally {
     setDefaultStatus();
     isRunning = false;
-    return;
   }
-
-
-  editor.edit(editBuilder => {
-    editBuilder.replace(textRange, migratedText);
-  });
-  const migratedLines = migratedText.split("\n");
-  const newLastLine = firstLine.lineNumber + migratedLines.length - 1;
-  const lastChar = migratedLines[migratedLines.length - 1].length + 1;
-  const lastPosition = new vscode.Position(newLastLine, lastChar);
-  
-  editor.selection = new vscode.Selection(firstLine.range.start, lastPosition);
-  vscode.window.showInformationMessage(infoMsg);
-
-  setDefaultStatus();
-  isRunning = false;
 }
 
 const command: CommandModule = {
