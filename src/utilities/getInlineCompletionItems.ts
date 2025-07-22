@@ -61,22 +61,12 @@ export default async function getInlineCompletionItems(
       if (cancelled) return;
       const result = chunk?.results[0]
       if (!result) return;
+      accumulated += result.new_prefix;
       
-      //strip off any overlap at the start of result.new_prefix
-      const nextText = result.new_prefix;
-      let toAdd = nextText;
-      if (appendedSoFar && nextText.startsWith(appendedSoFar)) {
-        toAdd = nextText.slice(appendedSoFar.length);
-      }
-
-      // Append only the non‐overlapping part
-      accumulated += toAdd;
-
-      // Update appendedSoFar to the last word (plus a space) of what we've shown so far
+      // Update accumulated to the last word (plus a space) of what we've shown so far
       const words = accumulated.trim().split(/\s+/);
       const lastWord = words.length ? words[words.length - 1] : "";
       appendedSoFar = lastWord ? lastWord + " " : "";
-
       const { before, after } = extractCompletionParts(accumulated);
 
       // Show ghost text on the line below (now guaranteed to exist)
