@@ -30,7 +30,6 @@ export default async function getInlineCompletionItems(
 
   const ghostDeco = createDecorationType();
   let accumulated = "\n";
-  let appendedSoFar = "";
   let lastResolvedText = "";
   let cancelled = false;
 
@@ -63,10 +62,6 @@ export default async function getInlineCompletionItems(
       if (!result) return;
       accumulated += result.new_prefix;
       
-      // Update accumulated to the last word (plus a space) of what we've shown so far
-      const words = accumulated.trim().split(/\s+/);
-      const lastWord = words.length ? words[words.length - 1] : "";
-      appendedSoFar = lastWord ? lastWord + " " : "";
       const { before, after } = extractCompletionParts(accumulated);
 
       // Show ghost text on the line below (now guaranteed to exist)
